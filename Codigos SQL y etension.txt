@@ -1,0 +1,163 @@
+Generame el codigo en SQL prar crear estos datos en phpMyAdmin
+Nombre
+Apellido
+Correo electronico
+Domicilio
+Edad
+Genero
+Telefono
+Fecha de Nacimiento
+Ciudad
+Pais
+Ocupación
+Intereses
+Nombre de ususario
+Contraseña
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `apellido` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `nombre` varchar(50) NOT NULL,
+  `correo_e` varchar(100) NOT NULL,
+  `domicilio` varchar(100) NOT NULL,
+  `edad` INT NOT NULL,  
+  `genero` varchar(255) NOT NULL,
+  `telefono` INT NOT NULL,
+  `techa_nac` Date NOT NULL,
+  `ciudad` varchar(50) NOT NULL,
+  `pais` varchar(50) NOT NULL,
+  `ocupación` varchar(50) NOT NULL,
+  `intereses` TEXT NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+UPDATE usuarios SET genero = 'valor_del_genero' WHERE id = id_del_usuario;
+
+ALTER TABLE users
+ADD aceptar_terminos TINYINT(1) NOT NULL DEFAULT 0;
+
+
+
+
+
+Codigo Extenso:
+
+
+<?php
+// Include config file
+require_once "config.php";
+
+// Define variables and initialize with empty values
+$username = $password = $confirm_password = $nombre = $apellido = $correo_e = $domicilio = $edad = $genero = $telefono = $techa_nac = $ciudad = $pais = $ocupación = $intereses = "";
+$username_err = $password_err = $confirm_password_err = $nombre_err = $apellido_err = $correo_e_err = $domicilio_err = $edad_err = $genero_err = $telefono_err = $techa_nac_err = $ciudad_err = $pais_err = $ocupacion_err = $intereses_err = $terminos_err = "";
+
+// Processing form data when form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    // Validate username
+    if (empty(trim($_POST["username"]))) {
+        $username_err = "Por favor ingrese un usuario.";
+    } else {
+        // Prepare a select statement
+        $sql = "SELECT id FROM users WHERE username = ?";
+
+        if ($stmt = mysqli_prepare($link, $sql)) {
+            // Bind variables to the prepared statement as parameters
+            mysqli_stmt_bind_param($stmt, "s", $param_username);
+
+            // Set parameters
+            $param_username = trim($_POST["username"]);
+
+            // Attempt to execute the prepared statement
+            if (mysqli_stmt_execute($stmt)) {
+                /* store result */
+                mysqli_stmt_store_result($stmt);
+
+                if (mysqli_stmt_num_rows($stmt) == 1) {
+                    $username_err = "Este usuario ya fue tomado.";
+                } else {
+                    $username = trim($_POST["username"]);
+                }
+            } else {
+                echo "Al parecer algo salió mal.";
+            }
+        }
+
+        // Close statement
+        mysqli_stmt_close($stmt);
+    }
+
+    // ... (Rest of your input validations)
+
+    // Validate password
+    if (empty(trim($_POST["password"]))) {
+        $password_err = "Por favor ingresa una contraseña.";
+    } elseif (strlen(trim($_POST["password"])) < 6) {
+        $password_err = "La contraseña al menos debe tener 6 caracteres.";
+    } else {
+        $password = trim($_POST["password"]);
+    }
+
+    // Validate confirm password
+    if (empty(trim($_POST["confirm_password"]))) {
+        $confirm_password_err = "Confirma tu contraseña.";
+    } else {
+        $confirm_password = trim($_POST["confirm_password"]);
+        if (empty($password_err) && ($password != $confirm_password)) {
+            $confirm_password_err = "No coincide la contraseña.";
+        }
+    }
+
+    // Check if terms and conditions are accepted
+    if (empty($_POST["terminos"])) {
+        $terminos_err = "Debes aceptar los términos y condiciones.";
+    }
+
+    // Check input errors before inserting in database
+    if (empty($username_err) && empty($password_err) && empty($confirm_password_err) && empty($nombre_err) && empty($apellido_err) && empty($correo_e_err) && empty($domicilio_err) && empty($edad_err) && empty($genero_err) && empty($telefono_err) && empty($techa_nac_err) && empty($ciudad_err) && empty($pais_err) && empty($ocupacion_err) && empty($intereses_err) && empty($terminos_err)) {
+
+        // Prepare an insert statement
+        $sql = "INSERT INTO users (username, password, nombre, apellido, correo_e, domicilio, edad, genero, telefono, techa_nac, ciudad, pais, ocupacion, intereses) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        if ($stmt = mysqli_prepare($link, $sql)) {
+            // Bind variables to the prepared statement as parameters
+            mysqli_stmt_bind_param($stmt, "ssssssssssssss", $param_username, $param_password, $param_nombre, $param_apellido, $param_correo_e, $param_domicilio, $param_edad, $param_genero, $param_telefono, $param_techa_nac, $param_ciudad, $param_pais, $param_ocupacion, $param_intereses);
+
+            // Set parameters
+            $param_username = $username;
+            $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
+            $param_nombre = $nombre;
+            $param_apellido = $apellido;
+            $param_correo_e = $correo_e;
+            $param_domicilio = $domicilio;
+            $param_edad = $edad;
+            $param_genero = $genero;
+            $param_telefono = $telefono;
+            $param_techa_nac = $techa_nac;
+            $param_ciudad = $ciudad;
+            $param_pais = $pais;
+            $param_ocupacion = $ocupación;
+            $param_intereses = $intereses;
+
+            // Attempt to execute the prepared statement
+            if (mysqli_stmt_execute($stmt)) {
+                // Redirect to login page
+                header("location: login.php");
+            } else {
+                echo "Algo salió mal, por favor inténtalo de nuevo.";
+            }
+        }
+
+        // Close statement
+        mysqli_stmt_close($stmt);
+    }
+
+    // Close connection
+    mysqli_close($link);
+}
+?>
+<!-- Rest of your HTML form remains the same -->
